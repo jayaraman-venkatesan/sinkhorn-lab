@@ -26,3 +26,20 @@ git submodule update --init --recursive
 `GET /api/health` returns `{"status":"ready"}` after startup. `POST /api/solve`
 invokes the pinned library directly; see [the API contract](docs/api.md) for its
 wire schema, limits, numerical-status semantics, and transport errors.
+
+## Frontend development
+
+Use Node 24 LTS and the committed npm lockfile:
+
+```sh
+cd web
+npm ci
+npm test -- --run
+npm run typecheck
+npm run lint
+npm run build
+npm run dev
+```
+
+The Vite development server proxies `/api` to `http://127.0.0.1:5000`. Start the
+API separately before making real solve requests from the editor.
