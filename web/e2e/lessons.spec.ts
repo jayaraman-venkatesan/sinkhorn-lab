@@ -35,20 +35,69 @@ test('guided scaling chapter runs the real solver scene before the lab', async (
   await page.getByRole('region', { name: 'Watch destination and source updates' }).screenshot({ path: testInfo.outputPath('guided-scene.png') });
 });
 
-test('manual allocation confirms constrained shipments and supports undo and reset', async ({ page }) => {
+test('manual allocation preview leaves confirmed accounting unchanged', async ({ page }) => {
+  await page.goto('/lessons/02-manual-allocation');
+
+  await expect(page.getByLabel('Warehouse A remaining')).toHaveText('40 kg');
+  await expect(page.getByLabel('Destination A remaining')).toHaveText('50 kg');
+  await page.getByLabel('Warehouse A to Destination A amount').fill('40');
+  await page.getByRole('button', { name: 'Preview allocation' }).click();
+  await expect(page.getByRole('dialog', { name: 'Confirm allocation' })).toContainText('40 kg');
+  await expect(page.getByLabel('Warehouse A remaining')).toHaveText('40 kg');
+  await expect(page.getByLabel('Destination A remaining')).toHaveText('50 kg');
+});
+
+test('manual allocation confirmation updates sent, received, and cost accounting', async ({ page }) => {
   await page.goto('/lessons/02-manual-allocation');
 
   await page.getByLabel('Warehouse A to Destination A amount').fill('40');
   await page.getByRole('button', { name: 'Preview allocation' }).click();
-  await expect(page.getByRole('dialog', { name: 'Confirm allocation' })).toContainText('40 kg');
-  await page.getByRole('button', { name: 'Confirm allocation' }).click();
+  await page.getByRole('dialog', { name: 'Confirm allocation' }).getByRole('button', { name: 'Confirm allocation' }).click();
+
   await expect(page.getByLabel('Warehouse A remaining')).toHaveText('0 kg');
   await expect(page.getByLabel('Destination A remaining')).toHaveText('10 kg');
+  await expect(page.getByLabel('Destination A received')).toHaveText('40 kg');
+  await expect(page.locator('.allocation-status')).toContainText('Accumulated cost40');
+});
 
+test('manual allocation caps the next confirmation by both remaining constraints', async ({ page }) => {
+  await page.goto('/lessons/02-manual-allocation');
+
+  await page.getByLabel('Warehouse A to Destination A amount').fill('40');
+  await page.getByRole('button', { name: 'Preview allocation' }).click();
+  await page.getByRole('dialog', { name: 'Confirm allocation' }).getByRole('button', { name: 'Confirm allocation' }).click();
+  await page.getByLabel('Allocation source').selectOption('1');
+
+  const amount = page.getByLabel('Warehouse B to Destination A amount');
+  await expect(amount).toHaveAttribute('max', '10');
+  await amount.fill('11');
+  await expect(page.getByRole('button', { name: 'Preview allocation' })).toBeDisabled();
+  await expect(page.getByRole('alert')).toHaveText('Enter at most 10 kg: the smaller of remaining stock and demand.');
+});
+
+test('manual allocation undo and reset restore every accounting counter', async ({ page }) => {
+  await page.goto('/lessons/02-manual-allocation');
+
+  const confirmForty = async () => {
+    await page.getByLabel('Warehouse A to Destination A amount').fill('40');
+    await page.getByRole('button', { name: 'Preview allocation' }).click();
+    await page.getByRole('dialog', { name: 'Confirm allocation' }).getByRole('button', { name: 'Confirm allocation' }).click();
+  };
+
+  await confirmForty();
   await page.getByRole('button', { name: 'Undo allocation' }).click();
   await expect(page.getByLabel('Warehouse A remaining')).toHaveText('40 kg');
-  await page.getByRole('button', { name: 'Reset allocations' }).click();
+  await expect(page.getByLabel('Destination A remaining')).toHaveText('50 kg');
+  await expect(page.getByLabel('Destination A received')).toHaveText('0 kg');
   await expect(page.getByText('No allocations confirmed yet.')).toBeVisible();
+
+  await confirmForty();
+  await page.getByRole('button', { name: 'Reset allocations' }).click();
+  await expect(page.getByLabel('Warehouse A remaining')).toHaveText('40 kg');
+  await expect(page.getByLabel('Destination A remaining')).toHaveText('50 kg');
+  await expect(page.getByLabel('Destination A received')).toHaveText('0 kg');
+  await expect(page.getByText('No allocations confirmed yet.')).toBeVisible();
+
   const reset = page.getByRole('button', { name: 'Reset allocations' });
   await reset.hover();
   await expect(reset).toHaveCSS('background-color', 'rgb(238, 241, 233)');

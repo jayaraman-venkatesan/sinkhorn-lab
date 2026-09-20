@@ -27,10 +27,10 @@ solver always handles every zero-support problem.
 
 ## Static equivalent
 
-| Pinned case and solver | Stop | Attempted / accepted pairs | Target L1 | Usable |
+| Pinned case and solver | Stop | Attempted / accepted pairs | Target L1 (supplied units) | Usable |
 | --- | --- | ---: | ---: | --- |
-| Tiny regularization, Basic | NumericalBreakdown | 322 / 321 | 160 kg | No |
-| Tiny regularization, LogDomain | IterationLimit | 1000 / 1000 | about 160 kg | No |
+| Tiny regularization, Basic | NumericalBreakdown | 322 / 321 | 160 | No |
+| Tiny regularization, LogDomain | IterationLimit | 1000 / 1000 | 159.99999999999994 | No |
 | Zero support, Basic | NumericalBreakdown | 1 / 0 | 1 | No |
 | Zero support, LogDomain | ThresholdMet | 1 / 1 | 0 | Yes |
 

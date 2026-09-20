@@ -5,7 +5,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const scriptRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const rootArgument = process.argv.indexOf('--root');
+const root = rootArgument >= 0 ? path.resolve(process.argv[rootArgument + 1]) : scriptRoot;
 const examplesDirectory = path.join(root, 'content', 'examples');
 const figuresDirectory = path.join(root, 'content', 'figures');
 const check = process.argv.includes('--check');

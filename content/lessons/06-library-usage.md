@@ -47,6 +47,6 @@ The [zero-support example](../examples/zero-support.json) is a compact reminder
 to branch on result status rather than treating any returned matrix as a shipment.
 For provenance, the implementation follows POT 0.9.6.post1 at commit
 `85113e9a380f5fcf684c50c73c1ff6a164a7366e` and preserves its notice. Historical
-credit and research boundaries are summarized in the previous chapters.
-
-Continue in the [interactive experiment lab](/lab).
+credit and research boundaries are summarized in the previous chapters. The
+website presents its experiment-lab link outside this shared Markdown so this
+chapter's ordinary links remain correct when read directly on GitHub.

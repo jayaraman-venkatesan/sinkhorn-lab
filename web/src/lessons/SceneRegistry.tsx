@@ -1,16 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { scenarioRequest, solve } from '../api/solve';
 import type { Scenario, SolveResponse } from '../contracts';
 import { shipmentAt } from '../playback/shipment';
 import { ordinaryScenario } from '../scenario/presets';
 import { ComparisonView } from '../scenes/ComparisonView';
 import { WarehouseScene, type RouteSelection } from '../scenes/WarehouseScene';
+import {
+  initialManualAllocationState,
+  manualAllocationLimit,
+  manualAllocationReducer,
+  manualAllocationView,
+  manualCosts,
+  manualDemand,
+  manualSupply,
+} from './manualAllocation';
 
-type Allocation = { source: number; target: number; amount: number };
-
-const source = [40, 60];
-const target = [50, 50];
-const costs = [[1, 3], [2, 1]];
 const sourceLabels = ['Warehouse A', 'Warehouse B'];
 const targetLabels = ['Destination A', 'Destination B'];
 
@@ -30,35 +34,33 @@ const fixtureModules = import.meta.glob<Fixture>('../../../content/examples/*.js
 const fixtures = new Map(Object.values(fixtureModules).map((fixture) => [fixture.id, fixture]));
 
 function ManualAllocation() {
-  const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [allocationState, dispatch] = useReducer(manualAllocationReducer, initialManualAllocationState);
   const [sourceIndex, setSourceIndex] = useState(0);
   const [targetIndex, setTargetIndex] = useState(0);
   const [amount, setAmount] = useState(0);
-  const [preview, setPreview] = useState<Allocation | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
-  const plan = useMemo(() => {
-    const matrix = [[0, 0], [0, 0]];
-    for (const allocation of allocations) matrix[allocation.source]![allocation.target]! += allocation.amount;
-    return matrix;
-  }, [allocations]);
-  const state = shipmentAt(source, target, costs, plan, 1);
-  const limit = Math.min(state.sourceRemaining[sourceIndex]!, state.targetRemaining[targetIndex]!);
+  const { plan, accounting } = manualAllocationView(allocationState);
+  const limit = manualAllocationLimit(allocationState, sourceIndex, targetIndex);
   const amountValid = Number.isFinite(amount) && amount > 0 && amount <= limit;
+  const inputError = amount > 0 && !amountValid
+    ? `Enter at most ${limit} kg: the smaller of remaining stock and demand.`
+    : null;
 
   useEffect(() => {
     const currentDialog = dialog.current;
-    if (!preview || !currentDialog) return;
+    if (!allocationState.preview || !currentDialog) return;
     currentDialog.showModal();
     return () => currentDialog.close();
-  }, [preview]);
+  }, [allocationState.preview]);
 
   return <section className="lesson-scene manual-allocation" aria-labelledby="manual-allocation-title">
     <p className="eyebrow">Interactive scene · confirmed allocations only</p>
     <h2 id="manual-allocation-title">Try the 40 / 60 kg plan</h2>
     <div className="allocation-status" aria-label="Manual allocation status">
-      {sourceLabels.map((label, index) => <div key={label}><span>{label} remaining</span><strong aria-label={`${label} remaining`}>{state.sourceRemaining[index]} kg</strong></div>)}
-      {targetLabels.map((label, index) => <div key={label}><span>{label} remaining</span><strong aria-label={`${label} remaining`}>{state.targetRemaining[index]} kg</strong></div>)}
-      <div><span>Accumulated cost</span><strong>{state.cost}</strong></div>
+      {sourceLabels.map((label, index) => <div key={label}><span>{label} remaining</span><strong aria-label={`${label} remaining`}>{accounting.sourceRemaining[index]} kg</strong></div>)}
+      {targetLabels.map((label, index) => <div key={label}><span>{label} remaining</span><strong aria-label={`${label} remaining`}>{accounting.targetRemaining[index]} kg</strong></div>)}
+      {targetLabels.map((label, index) => <div key={`${label}-received`}><span>{label} received</span><strong aria-label={`${label} received`}>{accounting.targetReceived[index]} kg</strong></div>)}
+      <div><span>Accumulated cost</span><strong>{accounting.cost}</strong></div>
     </div>
     <div className="allocation-controls">
       <label>From<select aria-label="Allocation source" value={sourceIndex} onChange={(event) => setSourceIndex(Number(event.currentTarget.value))}>
@@ -68,24 +70,24 @@ function ManualAllocation() {
         {targetLabels.map((label, index) => <option value={index} key={label}>{label}</option>)}
       </select></label>
       <label>Amount (kg)<input type="number" min="0" max={limit} step="any" value={amount || ''} aria-label={`${sourceLabels[sourceIndex]} to ${targetLabels[targetIndex]} amount`} onChange={(event) => setAmount(event.currentTarget.valueAsNumber)} /></label>
-      <button type="button" disabled={!amountValid} onClick={() => setPreview({ source: sourceIndex, target: targetIndex, amount })}>Preview allocation</button>
+      <button type="button" disabled={!amountValid} onClick={() => dispatch({ type: 'Preview', allocation: { source: sourceIndex, target: targetIndex, amount } })}>Preview allocation</button>
     </div>
-    {!amountValid && amount > 0 && <p className="message error" role="alert">Enter at most {limit} kg: the smaller of remaining stock and demand.</p>}
+    {(inputError ?? allocationState.error) && <p className="message error" role="alert">{inputError ?? allocationState.error}</p>}
     <div className="table-scroll">
       <table aria-label="Confirmed manual allocation plan">
         <thead><tr><th>From / to</th>{targetLabels.map((label) => <th key={label}>{label}</th>)}</tr></thead>
         <tbody>{sourceLabels.map((label, i) => <tr key={label}><th scope="row">{label}</th>{plan[i]!.map((value, j) => <td key={targetLabels[j]}>{value} kg</td>)}</tr>)}</tbody>
       </table>
     </div>
-    {allocations.length === 0 ? <p className="muted">No allocations confirmed yet.</p> : <ol aria-label="Confirmed allocations">{allocations.map((allocation, index) => <li key={`${index}-${allocation.source}-${allocation.target}`}>{sourceLabels[allocation.source]} → {targetLabels[allocation.target]}: {allocation.amount} kg</li>)}</ol>}
+    {allocationState.confirmed.length === 0 ? <p className="muted">No allocations confirmed yet.</p> : <ol aria-label="Confirmed allocations">{allocationState.confirmed.map((allocation, index) => <li key={`${index}-${allocation.source}-${allocation.target}`}>{sourceLabels[allocation.source]} → {targetLabels[allocation.target]}: {allocation.amount} kg</li>)}</ol>}
     <div className="actions">
-      <button className="quiet" type="button" disabled={allocations.length === 0} onClick={() => setAllocations((current) => current.slice(0, -1))}>Undo allocation</button>
-      <button className="quiet" type="button" onClick={() => { setAllocations([]); setAmount(0); }}>Reset allocations</button>
+      <button className="quiet" type="button" disabled={allocationState.confirmed.length === 0} onClick={() => dispatch({ type: 'Undo' })}>Undo allocation</button>
+      <button className="quiet" type="button" onClick={() => { dispatch({ type: 'Reset' }); setAmount(0); }}>Reset allocations</button>
     </div>
-    {preview && <dialog ref={dialog} aria-labelledby="confirm-allocation-title" onCancel={() => setPreview(null)}>
+    {allocationState.preview && <dialog ref={dialog} aria-labelledby="confirm-allocation-title" onCancel={() => dispatch({ type: 'CancelPreview' })}>
       <h3 id="confirm-allocation-title">Confirm allocation</h3>
-      <p>Commit {preview.amount} kg from {sourceLabels[preview.source]} to {targetLabels[preview.target]} at {costs[preview.source]![preview.target]} cost per kg?</p>
-      <div className="actions"><button className="quiet" type="button" onClick={() => setPreview(null)}>Cancel preview</button><button type="button" onClick={() => { setAllocations((current) => [...current, preview]); setPreview(null); setAmount(0); }}>Confirm allocation</button></div>
+      <p>Commit {allocationState.preview.amount} kg from {sourceLabels[allocationState.preview.source]} to {targetLabels[allocationState.preview.target]} at {manualCosts[allocationState.preview.source]![allocationState.preview.target]} cost per kg?</p>
+      <div className="actions"><button className="quiet" type="button" onClick={() => dispatch({ type: 'CancelPreview' })}>Cancel preview</button><button type="button" onClick={() => { dispatch({ type: 'Confirm' }); setAmount(0); }}>Confirm allocation</button></div>
     </dialog>}
   </section>;
 }
@@ -93,10 +95,10 @@ function ManualAllocation() {
 function ProblemScene() {
   const [selection, setSelection] = useState<RouteSelection>(null);
   const emptyPlan = [[0, 0], [0, 0]];
-  const startingState = shipmentAt(source, target, costs, emptyPlan, 1);
+  const startingState = shipmentAt(manualSupply, manualDemand, manualCosts, emptyPlan, 1);
   return <section className="lesson-scene" aria-label="Starting warehouse quantities and fill levels">
     <p className="eyebrow">Interactive scene · the problem before a plan</p>
-    <WarehouseScene scenario={{ ...ordinaryScenario, costs }} plan={emptyPlan} shipment={startingState} selection={selection} onSelect={setSelection} flowing={false} mode="Problem" />
+    <WarehouseScene scenario={{ ...ordinaryScenario, costs: manualCosts }} plan={emptyPlan} shipment={startingState} selection={selection} onSelect={setSelection} flowing={false} mode="Problem" />
   </section>;
 }
 

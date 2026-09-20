@@ -9,8 +9,9 @@ const lessonModules = import.meta.glob<string>('../../../content/lessons/*.md', 
 const assetModules = {
   ...import.meta.glob<string>('../../../content/figures/*.svg', { eager: true, query: '?url', import: 'default' }),
   ...import.meta.glob<string>('../../../content/examples/*.json', { eager: true, query: '?url', import: 'default' }),
+  ...import.meta.glob<string>('../../../docs/research/paper-arxiv-1306-0895-sinkhorn-shift-lab/*.md', { eager: true, query: '?url', import: 'default' }),
 };
-const assets = new Map(Object.entries(assetModules).map(([filename, url]) => [filename.match(/content\/(figures|examples)\/[^/]+$/)?.[0], url]));
+const assets = new Map(Object.entries(assetModules).map(([filename, url]) => [filename.match(/(?:content\/(?:figures|examples)|docs\/research\/paper-arxiv-1306-0895-sinkhorn-shift-lab)\/[^/]+$/)?.[0], url]));
 
 export const chapters = [
   { slug: '01-problem', label: '1. Meet the problem' },
@@ -27,16 +28,20 @@ function lessonSource(slug: string): string | undefined {
 }
 
 export function safeLessonUrl(url: string): string {
+  if (url.includes('\\') || url.startsWith('//')) return '';
   if (url.startsWith('../figures/') || url.startsWith('../examples/')) {
     const key = `content/${url.slice(3).split('#', 1)[0]}`;
     const asset = assets.get(key);
     return asset ? `${asset}${url.includes('#') ? `#${url.split('#')[1]}` : ''}` : '';
   }
+  if (url.startsWith('../../docs/research/paper-arxiv-1306-0895-sinkhorn-shift-lab/')) {
+    return assets.get(url.slice(6)) ?? '';
+  }
   if (/^(?:\.\/)?[0-9]{2}-[a-z0-9-]+\.md(?:#[a-z0-9-]+)?$/.test(url)) {
     const [filename, fragment] = url.replace(/^\.\//, '').split('#');
     return `/lessons/${filename!.replace(/\.md$/, '')}${fragment ? `#${fragment}` : ''}`;
   }
-  if (url.startsWith('/') || url.startsWith('#')) return url;
+  if (/^\/(?:lab|lessons\/[0-9]{2}-[a-z0-9-]+)(?:#[a-z0-9-]+)?$/.test(url) || url.startsWith('#')) return url;
   return defaultUrlTransform(url);
 }
 
