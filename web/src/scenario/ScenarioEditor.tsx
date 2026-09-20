@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import type { DiagnosticNumber, Point, Scenario, SolverKind } from '../contracts';
+import type { Point, Scenario, SolverKind } from '../contracts';
+import { ComparisonView } from '../scenes/ComparisonView';
+import { ScenarioMap } from './ScenarioMap';
+import { ordinaryScenario, tinyRegularizationScenario, zeroSupportScenario } from './presets';
 import { distanceCosts } from './costs';
 import type { EditorState } from './model';
 import {
@@ -22,10 +25,6 @@ type ScenarioEditorProps = {
 
 function inputValue(value: number): number | '' {
   return Number.isFinite(value) ? value : '';
-}
-
-function showDiagnostic(value: DiagnosticNumber): string {
-  return typeof value === 'number' ? value.toPrecision(6) : `not finite (${value.nonFinite})`;
 }
 
 function createPoint(collection: 'sources' | 'targets', index: number): Point {
@@ -176,6 +175,7 @@ function ReplacementPreview({
 export function ScenarioEditor({ state, errors, onEdit, onRun, onCancel }: ScenarioEditorProps) {
   const { scenario } = state;
   const [replacements, setReplacements] = useState<number[][] | null>(null);
+  const [solver, setSolver] = useState<RunChoice>('Basic');
   const sourceTotal = scenario.sources.reduce((sum, point) => sum + point.amount, 0);
   const targetTotal = scenario.targets.reduce((sum, point) => sum + point.amount, 0);
 
@@ -205,6 +205,12 @@ export function ScenarioEditor({ state, errors, onEdit, onRun, onCancel }: Scena
       </section>
 
       <form onSubmit={(event) => event.preventDefault()}>
+        <ScenarioMap scenario={scenario} onEdit={onEdit} />
+        <div className="actions">
+          <button type="button" className="quiet" onClick={() => onEdit(ordinaryScenario)}>Ordinary success preset</button>
+          <button type="button" className="quiet" onClick={() => onEdit(zeroSupportScenario)}>Zero support preset</button>
+          <button type="button" className="quiet" onClick={() => onEdit(tinyRegularizationScenario)}>Tiny regularization preset</button>
+        </div>
         <div className="point-grid">
           <PointEditor scenario={scenario} collection="sources" onEdit={onEdit} />
           <PointEditor scenario={scenario} collection="targets" onEdit={onEdit} />
@@ -304,6 +310,10 @@ export function ScenarioEditor({ state, errors, onEdit, onRun, onCancel }: Scena
         )}
 
         <div className="actions">
+          <label>Solver<select aria-label="Solver" value={solver} onChange={(event) => setSolver(event.currentTarget.value as RunChoice)}>
+            <option>Basic</option><option>LogDomain</option><option>Compare</option>
+          </select></label>
+          <button type="button" disabled={state.busy || errors.length > 0} onClick={() => onRun(solver)}>Run</button>
           {(['Basic', 'LogDomain', 'Compare'] as const).map((choice) => (
             <button
               key={choice}
@@ -334,33 +344,7 @@ export function ScenarioEditor({ state, errors, onEdit, onRun, onCancel }: Scena
         />
       )}
 
-      <section className="results" aria-live="polite" aria-busy={state.busy}>
-        <h2>Solver results</h2>
-        {state.busy && <p>Solving the current revision…</p>}
-        {Object.values(state.results).map((result) => (
-          <article className="result-card" aria-label={`${result.solver} result`} key={result.solver}>
-            <p className="eyebrow">{result.referenceVersion} · {result.referenceCommit.slice(0, 8)}</p>
-            <h3>{result.solver}</h3>
-            <p>{result.termination}</p>
-            <p>Usable plan: {result.checks.usable ? 'Yes' : 'No'}</p>
-            <dl>
-              <div><dt>Transport cost</dt><dd>{showDiagnostic(result.transportCost)}</dd></div>
-              <div><dt>Accepted pairs</dt><dd>{result.acceptedPairs}</dd></div>
-              <div><dt>Source residual</dt><dd>{showDiagnostic(result.checks.sourceL1)}</dd></div>
-              <div><dt>Target residual</dt><dd>{showDiagnostic(result.checks.targetL1)}</dd></div>
-            </dl>
-            <p>
-              Trace: {result.trace.frames.length} retained of {result.trace.observedCount} observed
-              {result.trace.sampled ? ` (${result.trace.omittedCount} omitted)` : ''}.
-            </p>
-            {result.warnings.length > 0 && <p>Warnings: {result.warnings.join(', ')}</p>}
-            <p className="muted">Shipment playback is not enabled in this editor.</p>
-          </article>
-        ))}
-        {!state.busy && Object.keys(state.results).length === 0 && (
-          <p className="muted">Run a solver explicitly to inspect its numerical result.</p>
-        )}
-      </section>
+      <ComparisonView scenario={scenario} results={state.results} busy={state.busy} />
     </>
   );
 }

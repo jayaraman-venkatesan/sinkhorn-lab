@@ -26,6 +26,13 @@ const scenario: Scenario = {
 const oldResult = solveFixture('Basic', 'old');
 
 describe('scenario editing', () => {
+  it('keeps the stale explanation across successive edits until a new run', () => {
+    const running = scenarioReducer(createEditorState(scenario), { type: 'RunStarted', requestId: 'old', revision: 0 });
+    const first = scenarioReducer(running, { type: 'Edit', scenario: { ...scenario, regularization: 2 } });
+    const second = scenarioReducer(first, { type: 'Edit', scenario: { ...scenario, regularization: 3 } });
+    expect(second.stale).toBe(true);
+    expect(scenarioReducer(second, { type: 'RunStarted', requestId: 'new', revision: second.revision }).stale).toBe(false);
+  });
   it('keeps custom costs when a point position changes', () => {
     const edited = updatePoint(scenario, 'sources', 'a', { x: 9, y: 8 });
 

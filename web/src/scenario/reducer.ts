@@ -11,7 +11,7 @@ export function scenarioReducer(state: EditorState, action: EditorAction): Edito
         requestId: null,
         results: {},
         transportError: null,
-        stale: state.busy || Object.keys(state.results).length > 0,
+        stale: state.stale || state.busy || Object.keys(state.results).length > 0,
       };
     case 'RunStarted':
       if (action.revision !== state.revision) return state;
