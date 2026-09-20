@@ -62,7 +62,7 @@ jobs:
         working-directory: web
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:8080
-        run: npm run test:deployment
+        run: npm run test:packaged
 
       - name: Stop packaged application
         if: always()

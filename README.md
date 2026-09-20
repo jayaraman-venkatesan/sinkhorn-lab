@@ -45,6 +45,7 @@ dotnet build -c Release --no-restore
 
 cd web
 npm ci
+npx playwright install chromium
 npm test -- --run
 npm run typecheck
 npm run lint
@@ -52,20 +53,22 @@ npm run build
 npm run test:e2e
 ```
 
+Playwright's Chromium binary is a separate prerequisite from the npm packages. A repository-clean checkout on a machine that has run Playwright before may reuse its browser cache; a fresh machine must run the install command above. On a supported Debian/Ubuntu host or in CI, `npx playwright install --with-deps chromium` also installs required operating-system libraries and may require package-install privileges.
+
 For interactive frontend development, run `ASPNETCORE_URLS=http://127.0.0.1:5080 dotnet run --project src/Api/Api.csproj --no-restore` from the repository root and `npm run dev` from `web/`. Vite proxies `/api` to the local API.
 
-The deployment acceptance runs against an already-started packaged service:
+The packaged browser suite runs against an already-started service:
 
 ```sh
 cd web
-PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 npm run test:deployment
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 npm run test:packaged
 ```
 
-It verifies the built home page, readiness endpoint, an actual pinned-library solve, and a nested lesson reload. See [verification evidence](docs/verification.md) for tested image architectures, digests, clean-checkout procedure, limitations, and exact commands.
+This runs the full browser suite against the built single-origin service. The included deployment acceptance verifies the built home page, readiness endpoint, an actual pinned-library solve, and chapter-specific rendering before and after a nested lesson reload. Use `npm run test:deployment` for that focused acceptance alone. See [verification evidence](docs/verification.md) for tested image architectures, digests, clean-checkout procedure, limitations, and exact commands.
 
 ## Lessons, fixtures, and figures
 
-The six files under `content/lessons/` are the ordinary Markdown source for both repository readers and the website. Stable JSON examples under `content/examples/` drive tables and scenes. Original synthetic SVGs under `content/figures/` provide non-interactive equivalents; no paper figures or stock photographs are copied.
+The six files under `content/lessons/` are the ordinary Markdown source for both repository readers and the website. Keep lesson asset destinations relative to the Markdown file: use `../figures/<name>.svg` and `../examples/<name>.json`, not machine paths or generated `/assets/` URLs. The browser build resolves those repository-relative destinations. Stable JSON examples under `content/examples/` drive tables and scenes. Original synthetic SVGs under `content/figures/` provide non-interactive equivalents; no paper figures or stock photographs are copied.
 
 After intentionally changing an approved example, regenerate the original figures and check all narrative/results against the pinned C# fixtures:
 

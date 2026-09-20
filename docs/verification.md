@@ -15,6 +15,7 @@ dotnet run --project examples/LessonUsage/LessonUsage.csproj -c Release --no-res
 
 cd web
 npm ci
+npx playwright install chromium
 npm test -- --run
 npm run typecheck
 npm run lint
@@ -25,18 +26,20 @@ cd ..
 node scripts/verify-content.mjs
 docker compose up --build --detach
 cd web
-PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 npm run test:deployment
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 npm run test:packaged
 cd ..
 docker compose down
 ```
 
-The host's port 8080 was already occupied during this verification, so the real Compose run used the documented override `APP_PORT=18080`; the application mapping remained `127.0.0.1:18080->8080` and the deployment test used that base URL. Default configuration remains 8080.
+The Playwright browser is not installed by `npm ci`. A clean repository clone on this already-used verification host reused the existing Playwright cache; a fresh machine must run `npx playwright install chromium`. Supported Debian/Ubuntu hosts and CI can use `npx playwright install --with-deps chromium` to install Chromium and its operating-system dependencies, subject to package-install privileges. The CI workflow uses that latter command.
+
+The host's port 8080 was already occupied during this verification, so the original real Compose run used the documented override `APP_PORT=18080`; the mapping remained loopback-only and the deployment acceptance used that base URL. The APP06 review-fix run used `APP_PORT=18085` and ran all 30 browser tests against that packaged service. Default configuration remains 8080.
 
 ## Container and architecture evidence
 
 Docker Desktop 4.44.3 reported Docker Engine 28.3.2 on Linux arm64. The native `linux/arm64` image ran as `uid=1654(app)`, reported ASP.NET/.NET 10.0.3 `linux-arm64`, contained no Node executable or SDK, and passed the one-origin deployment acceptance. The final image retained 93 Ubuntu copyright files plus .NET license/notices.
 
-The final native image was `sha256:721ea70c941275319085437600bd08e6b58161ce83425194e6131ad4ea185c1c` (`linux/arm64`). The separately built image was `sha256:54cb7beda44a9309a4a323357c183948ebef17b66c75add750dc7b8e1ea0b122` (`linux/amd64`). Docker Desktop started the latter under emulation on the arm64 host; it reported .NET RID `linux-x64`, ran as `app`, and passed the same deployment acceptance at loopback port 18081. This is emulated amd64 runtime evidence, not native amd64 evidence. The pinned base manifest lists advertise both architectures, but that advertisement alone is not counted as build or runtime proof.
+The implementation-worktree native image was `sha256:721ea70c941275319085437600bd08e6b58161ce83425194e6131ad4ea185c1c` (`linux/arm64`). A separate exact-commit recursive-clean-clone build produced `sha256:bf2b6026d763dd24d9219b0fca96e0db4063efb8c32dcebafaed7bb041fcdb8e` (`linux/arm64`) and passed the same runtime checks. These are evidence from distinct local build contexts; no byte-for-byte image reproducibility claim is made. The separately built image `sha256:54cb7beda44a9309a4a323357c183948ebef17b66c75add750dc7b8e1ea0b122` was `linux/amd64`. Docker Desktop started the latter under emulation on the arm64 host; it reported .NET RID `linux-x64`, ran as `app`, and passed the same deployment acceptance at loopback port 18081. This is emulated amd64 runtime evidence, not native amd64 evidence. The pinned base manifest lists advertise both architectures, but that advertisement alone is not counted as build or runtime proof.
 
 ## Final-image Ubuntu package inventory
 

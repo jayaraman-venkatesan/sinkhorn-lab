@@ -12,7 +12,7 @@ const solveRequest = {
   traceMode: 'None',
 };
 
-test('one origin serves the built course, real solver, health, and lesson reloads', async ({ request }) => {
+test('one origin serves the built course, real solver, health, and lesson reloads', async ({ page, request }) => {
   await expect.poll(async () => (await request.get('/api/health')).status(), { timeout: 120_000 }).toBe(200);
 
   const home = await request.get('/');
@@ -39,8 +39,13 @@ test('one origin serves the built course, real solver, health, and lesson reload
     checks: { usable: true },
   });
 
-  const lesson = await request.get('/lessons/05-numerical-behavior');
-  expect(lesson.status()).toBe(200);
-  expect(lesson.headers()['content-type']).toContain('text/html');
-  expect(await lesson.text()).toContain('<title>Sinkhorn Lab</title>');
+  await page.goto('/lessons/05-numerical-behavior');
+  const chapterHeading = page.getByRole('heading', { name: 'Basic and LogDomain are honest about failure' });
+  await expect(chapterHeading).toBeVisible();
+  await expect(page.getByText('Termination and plan validity are separate.', { exact: false })).toBeVisible();
+
+  await page.reload();
+  await expect(page).toHaveURL(/\/lessons\/05-numerical-behavior$/);
+  await expect(chapterHeading).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Static equivalent' })).toBeVisible();
 });
