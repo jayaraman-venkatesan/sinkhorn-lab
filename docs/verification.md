@@ -2,6 +2,40 @@
 
 Evidence date: 2026-09-20. This record distinguishes native execution from cross-build evidence and does not claim publication, a remote CI result, or a release.
 
+## Final pre-PR controller check
+
+Verified implementation revision: `98c2dabb5d486c9f325cdf3560ebf5edf440f7c3`.
+The later evidence-only commit changes documentation, not the tested runtime.
+
+- 26 API tests and 85 frontend tests passed.
+- All 32 Chromium browser tests passed against the freshly rebuilt native
+  Compose service at `127.0.0.1:18086` (13.0 seconds), including the new
+  mathematical-equation and tab-contrast regressions.
+- Type-check, lint, .NET format, Release build (zero warnings/errors), production
+  frontend/container build, six-lesson content verification and four-figure drift
+  check passed. The compiled C# example passed for Basic/LogDomain and the
+  deliberately failing zero-support example. Locked .NET restore and npm install
+  had passed immediately before this fix; dependency files did not change.
+- Native `linux/arm64` image:
+  `sha256:10c136a9d1ade86ff14218ac0da26e9b20fad65eb3502f01186cd5424fbbb0c5`.
+- Final `linux/amd64` image:
+  `sha256:11d4a16271d1fbbf364c7376a1406714686c39908cc0d0bddebb19bbc6e91844`.
+  It actually ran under Docker Desktop emulation at `127.0.0.1:18087` and passed
+  deployment acceptance (1/1, 1.6 seconds), including a real solve and nested
+  lesson rendering/reload. This is not native amd64 hardware coverage.
+- Both images ran as `uid=1654(app)`, reported the matching .NET 10.0.3 RID,
+  contained no Node executable or .NET SDK, and retained third-party notices.
+- The controller visually inspected the final rendered mathematical chapter and
+  its live solver scene. Independent final scoped review accepted all four
+  findings with no new breakage; see [review handoff](review-handoff.md).
+
+The earlier clean recursive clone verified implementation revision `7bb6141`;
+the final narrow review fix was verified in the isolated worktree, not claimed
+as a second clean-clone run. Runtime pins, locks and submodule are unchanged.
+The native preview remains available on this host at port 18086; stop only its
+named stack with `docker compose --project-name sinkhorn-lab-controller down`.
+The temporary final amd64 verification container was stopped after acceptance.
+
 ## Reproducible verification commands
 
 ```sh
