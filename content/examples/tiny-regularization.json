@@ -1,0 +1,38 @@
+{
+  "id": "tiny-regularization",
+  "title": "Tiny regularization at 100 kg",
+  "source": [90, 10],
+  "target": [10, 90],
+  "costs": [[0, 1], [1, 0]],
+  "regularization": 0.0001,
+  "threshold": 1e-9,
+  "maxIterations": 1000,
+  "reference": {
+    "version": "POT 0.9.6.post1",
+    "commit": "85113e9a380f5fcf684c50c73c1ff6a164a7366e",
+    "sourceGitBlob": "cf5efadfc0f33300899d9b8a20f762e5f96a2759",
+    "fixtureCase": "tiny_reg100"
+  },
+  "expected": {
+    "Basic": {
+      "termination": "NumericalBreakdown",
+      "lastAttemptedIndex": 321,
+      "attemptedPairs": 322,
+      "acceptedPairs": 321,
+      "plan": [[90, 0], [0, 10]],
+      "checks": { "finite": true, "nonnegative": true, "sourceL1": 0, "targetL1": 160, "totalMass": 100, "usable": false },
+      "transportCost": 0,
+      "warnings": ["numerical-breakdown"]
+    },
+    "LogDomain": {
+      "termination": "IterationLimit",
+      "lastAttemptedIndex": 999,
+      "attemptedPairs": 1000,
+      "acceptedPairs": 1000,
+      "plan": [[89.99999999999872, 0], [0, 9.999999999998767]],
+      "checks": { "finite": true, "nonnegative": true, "sourceL1": 2.511768570911954e-12, "targetL1": 159.99999999999994, "totalMass": 99.99999999999748, "usable": false },
+      "transportCost": 0,
+      "warnings": ["iteration-limit", "diagnostic-overflow"]
+    }
+  }
+}

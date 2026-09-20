@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('comparison panels retain independent playback, selection, status, and errors side by side', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByRole('button', { name: 'Run comparison' }).click();
   const basic = page.getByRole('article', { name: 'Basic result' });
   const log = page.getByRole('article', { name: 'LogDomain result' });
@@ -27,7 +27,7 @@ test('comparison panels retain independent playback, selection, status, and erro
 
 test('375px comparison keeps failed and successful results accessible without page overflow', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByRole('button', { name: 'Zero support preset' }).click();
   await page.getByRole('button', { name: 'Run comparison' }).click();
   const basic = page.getByRole('article', { name: 'Basic result' });
@@ -47,7 +47,7 @@ test('375px comparison keeps failed and successful results accessible without pa
 });
 
 test('ordinary and tiny regularization presets replace the full scenario explicitly', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByRole('button', { name: 'Zero support preset' }).click();
   await page.getByRole('button', { name: 'Ordinary success preset' }).click();
   await expect(page.getByText('Supply total: 100', { exact: true })).toBeVisible();

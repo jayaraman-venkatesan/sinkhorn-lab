@@ -1,0 +1,38 @@
+{
+  "id": "zero-support",
+  "title": "Zero-support solver contrast",
+  "source": [1, 0],
+  "target": [0, 1],
+  "costs": [[0, 1], [1, 0]],
+  "regularization": 1,
+  "threshold": 1e-9,
+  "maxIterations": 1000,
+  "reference": {
+    "version": "POT 0.9.6.post1",
+    "commit": "85113e9a380f5fcf684c50c73c1ff6a164a7366e",
+    "sourceGitBlob": "cf5efadfc0f33300899d9b8a20f762e5f96a2759",
+    "fixtureCase": "zero_support"
+  },
+  "expected": {
+    "Basic": {
+      "termination": "NumericalBreakdown",
+      "lastAttemptedIndex": 0,
+      "attemptedPairs": 1,
+      "acceptedPairs": 0,
+      "plan": [[0.25, 0.09196986029286058], [0.09196986029286058, 0.25]],
+      "checks": { "finite": true, "nonnegative": true, "sourceL1": 1, "targetL1": 1, "totalMass": 0.6839397205857212, "usable": false },
+      "transportCost": 0.18393972058572117,
+      "warnings": ["numerical-breakdown"]
+    },
+    "LogDomain": {
+      "termination": "ThresholdMet",
+      "lastAttemptedIndex": 0,
+      "attemptedPairs": 1,
+      "acceptedPairs": 1,
+      "plan": [[0, 1], [0, 0]],
+      "checks": { "finite": true, "nonnegative": true, "sourceL1": 0, "targetL1": 0, "totalMass": 1, "usable": true },
+      "transportCost": 1,
+      "warnings": []
+    }
+  }
+}

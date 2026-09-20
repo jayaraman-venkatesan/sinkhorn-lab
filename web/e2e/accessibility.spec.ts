@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('reduced motion uses explicit shipment steps and readable phase states', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByRole('button', { name: 'Run Basic' }).click();
   const panel = page.getByRole('article', { name: 'Basic result' });
   await expect(panel.getByText(/Reduced motion: static steps/)).toBeVisible();
@@ -22,7 +22,7 @@ test('reduced motion uses explicit shipment steps and readable phase states', as
 });
 
 test('a motion preference change pauses a playing clock and deliberate updates alone announce', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByRole('button', { name: 'Run Basic' }).click();
   const panel = page.getByRole('article', { name: 'Basic result' });
   await panel.getByRole('button', { name: 'Play shipments', exact: true }).click();
@@ -37,7 +37,7 @@ test('a motion preference change pauses a playing clock and deliberate updates a
 });
 
 test('points have keyboard numeric alternatives and dragging invalidates the result', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   const x = page.getByLabel('Warehouse A X position');
   await x.focus();
   await page.keyboard.press('ControlOrMeta+A');
@@ -60,7 +60,7 @@ test('points have keyboard numeric alternatives and dragging invalidates the res
 });
 
 test('mode tabs support arrow-key navigation and describe their panel', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByRole('button', { name: 'Run Basic' }).click();
   const panel = page.getByRole('article', { name: 'Basic result' });
   await panel.getByRole('tab', { name: 'Solver', exact: true }).focus();

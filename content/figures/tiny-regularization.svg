@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 346" role="img" aria-labelledby="title description">
+  <title id="title">Tiny regularization at 100 kg</title>
+  <desc id="description">Reference inputs and named solver outcomes generated from tiny-regularization.json.</desc>
+  <style>.title{font:700 28px Georgia,serif;fill:#173f2d}.label{font:700 14px system-ui,sans-serif;fill:#8a4615}.body{font:16px system-ui,sans-serif;fill:#17211b}.strong{font-weight:700}.box{fill:#fffdf5;stroke:#c8c4b5;stroke-width:2}</style>
+  <rect x="10" y="10" width="840" height="326" rx="18" class="box"/>
+  <text x="42" y="56" class="title">Tiny regularization at 100 kg</text>
+  <text x="42" y="91" class="label">SOURCE</text><text x="145" y="91" class="body">90, 10</text>
+  <text x="42" y="124" class="label">TARGET</text><text x="145" y="124" class="body">10, 90</text>
+  <text x="42" y="157" class="label">COSTS</text><text x="145" y="157" class="body">[0, 1]  [1, 0]</text>
+  <text x="42" y="190" class="label">SETTINGS</text><text x="145" y="190" class="body">regularization 1.000e-4 · threshold 1.000e-9 · budget 1000</text>
+  <g transform="translate(42 238)"><circle cx="8" cy="-5" r="7" fill="#a1462f"/><text x="28" y="0" class="body"><tspan class="strong">Basic</tspan><tspan> · NumericalBreakdown · not usable · cost 0</tspan></text></g>
+  <g transform="translate(42 286)"><circle cx="8" cy="-5" r="7" fill="#a1462f"/><text x="28" y="0" class="body"><tspan class="strong">LogDomain</tspan><tspan> · IterationLimit · not usable · cost 0</tspan></text></g>
+  <text x="42" y="316" class="label">PINNED POT 0.9.6.post1 · 85113e9a380f</text>
+</svg>

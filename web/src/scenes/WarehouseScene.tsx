@@ -4,9 +4,10 @@ import { numberLabel } from './ResultSummary';
 
 export type RouteSelection = { sourceId: string; targetId: string } | null;
 
-export function WarehouseScene({ scenario, plan, shipment, selection, onSelect, flowing }: {
+export function WarehouseScene({ scenario, plan, shipment, selection, onSelect, flowing, mode }: {
   scenario: Scenario; plan: DiagnosticNumber[][]; shipment: ShipmentState | null;
   selection: RouteSelection; onSelect: (selection: RouteSelection) => void; flowing: boolean;
+  mode?: 'Plan' | 'Shipment' | 'Problem';
 }) {
   const points = [...scenario.sources, ...scenario.targets];
   const minX = Math.min(...points.map((point) => point.x));
@@ -16,8 +17,9 @@ export function WarehouseScene({ scenario, plan, shipment, selection, onSelect, 
   const position = (point: typeof points[number]) => ({ x: 120 + (point.x - minX) / extentX * 560, y: 110 + (point.y - minY) / extentY * 220 });
   const largest = Math.max(0, ...plan.flat().filter((value): value is number => typeof value === 'number' && value >= 0));
 
+  const presentation = mode ?? (shipment ? 'Shipment' : 'Plan');
   return <div className={`warehouse-scene ${flowing ? 'flowing' : ''}`}>
-    <div className="scene-heading"><span>{shipment ? 'GRAIN IN TRANSIT' : 'A PLAN TAKES SHAPE'}</span><span>{shipment ? 'Physical shipment' : 'Tentative · nothing shipped'}</span></div>
+    <div className="scene-heading"><span>{presentation === 'Problem' ? 'SUPPLY AND DEMAND' : presentation === 'Shipment' ? 'GRAIN IN TRANSIT' : 'A PLAN TAKES SHAPE'}</span><span>{presentation === 'Problem' ? 'Starting quantities · nothing shipped' : presentation === 'Shipment' ? 'Physical shipment' : 'Tentative · nothing shipped'}</span></div>
     <svg viewBox="0 0 800 460" role="group" aria-label="Warehouse transport map">
       <title>Grain moves along routes from warehouses to destinations</title>
       <path className="terrain" d="M0 385 Q170 300 350 380 T800 340 V460 H0Z" />

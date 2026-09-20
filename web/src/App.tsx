@@ -5,8 +5,9 @@ import { ScenarioEditor } from './scenario/ScenarioEditor';
 import { createEditorState, validateScenario } from './scenario/model';
 import { scenarioReducer } from './scenario/reducer';
 import { ordinaryScenario } from './scenario/presets';
+import { CourseNavigation, LessonPage } from './lessons/LessonPage';
 
-export default function App() {
+function Lab() {
   const [state, dispatch] = useReducer(scenarioReducer, ordinaryScenario, createEditorState);
   const controllerRef = useRef<AbortController | null>(null);
   const errors = validateScenario(state.scenario);
@@ -57,7 +58,8 @@ export default function App() {
   }
 
   return (
-    <main>
+    <>
+      <CourseNavigation />
       <ScenarioEditor
         state={state}
         errors={errors}
@@ -65,6 +67,13 @@ export default function App() {
         onRun={(choice) => void run(choice)}
         onCancel={cancel}
       />
-    </main>
+    </>
   );
+}
+
+export default function App() {
+  const pathname = window.location.pathname.replace(/\/$/, '') || '/';
+  if (pathname === '/lab') return <main><Lab /></main>;
+  const lessonMatch = pathname.match(/^\/lessons\/([a-z0-9-]+)$/);
+  return <main><LessonPage slug={lessonMatch?.[1] ?? '01-problem'} /></main>;
 }

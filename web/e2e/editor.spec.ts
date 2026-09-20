@@ -18,7 +18,7 @@ async function holdNextSolve(page: Page) {
 }
 
 test('edits quantities and blocks an unequal scenario before transport', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
 
   await expect(page.getByText('Supply total: 100', { exact: true })).toBeVisible();
   await expect(page.getByText('Demand total: 100', { exact: true })).toBeVisible();
@@ -33,7 +33,7 @@ test('edits quantities and blocks an unequal scenario before transport', async (
 });
 
 test('previews every custom cost replacement before cancel or confirmation', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   const mode = page.getByLabel('Cost mode');
   const firstCost = page.getByLabel('Cost from Warehouse A to Destination A');
 
@@ -58,7 +58,7 @@ test('previews every custom cost replacement before cancel or confirmation', asy
 });
 
 test('keeps keyboard focus inside the replacement preview and Escape cancels', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   const mode = page.getByLabel('Cost mode');
   const sourceX = page.getByLabel('Warehouse A X position');
   const firstCost = page.getByLabel('Cost from Warehouse A to Destination A');
@@ -82,7 +82,7 @@ test('keeps keyboard focus inside the replacement preview and Escape cancels', a
 });
 
 test('applies the exact distance matrix shown in the replacement preview', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   const mode = page.getByLabel('Cost mode');
   const sourceX = page.getByLabel('Warehouse A X position');
   const firstCost = page.getByLabel('Cost from Warehouse A to Destination A');
@@ -109,7 +109,7 @@ test('applies the exact distance matrix shown in the replacement preview', async
 });
 
 test('runs Basic through the real API and renders its result', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByRole('button', { name: 'Run Basic' }).click();
 
   const result = page.getByRole('article', { name: 'Basic result' });
@@ -126,7 +126,7 @@ test('runs a real sequential comparison with identical numerical settings', asyn
       requests.push(request.postDataJSON() as Record<string, unknown>);
     }
   });
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByRole('button', { name: 'Run comparison' }).click();
 
   await expect(page.getByRole('article', { name: 'Basic result' })).toBeVisible();
@@ -143,7 +143,7 @@ test('runs a real sequential comparison with identical numerical settings', asyn
 test('editing aborts a held request and prevents its late result from replacing stale state', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   const held = await holdNextSolve(page);
   await page.getByRole('button', { name: 'Run Basic' }).click();
   await held.reached;
@@ -156,7 +156,7 @@ test('editing aborts a held request and prevents its late result from replacing 
 });
 
 test('cancel aborts a held request and never accepts a result', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   const held = await holdNextSolve(page);
   await page.getByRole('button', { name: 'Run Basic' }).click();
   await held.reached;

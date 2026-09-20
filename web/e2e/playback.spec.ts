@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('ships the returned plan from one clock and links routes to cells', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   const response = page.waitForResponse('**/api/solve');
   await page.getByRole('button', { name: 'Run Basic' }).click();
   const result = await (await response).json() as { transportCost: number };
@@ -36,7 +36,7 @@ test('ships the returned plan from one clock and links routes to cells', async (
 });
 
 test('keeps failed plans inspectable but disables shipment', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByRole('button', { name: 'Zero support preset' }).click();
   await page.getByLabel('Solver', { exact: true }).selectOption('Basic');
   await page.getByRole('button', { name: 'Run', exact: true }).click();
@@ -47,7 +47,7 @@ test('keeps failed plans inspectable but disables shipment', async ({ page }) =>
 });
 
 test('steps real phases, exposes rollback, and charts only reported checkpoints', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByRole('button', { name: 'Zero support preset' }).click();
   const response = page.waitForResponse('**/api/solve');
   await page.getByRole('button', { name: 'Run Basic' }).click();
@@ -66,7 +66,7 @@ test('steps real phases, exposes rollback, and charts only reported checkpoints'
 });
 
 test('discloses sampled gaps and plays retained phases without invented iterations', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByLabel('Stopping threshold').fill('1e-30');
   const response = page.waitForResponse('**/api/solve');
   await page.getByRole('button', { name: 'Run LogDomain' }).click();
@@ -91,7 +91,7 @@ test('discloses sampled gaps and plays retained phases without invented iteratio
 });
 
 test('an exhausted result exposes its final matrix independently of tentative trace selection', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByLabel('Maximum update pairs').fill('1');
   const response = page.waitForResponse('**/api/solve');
   await page.getByRole('button', { name: 'Run Basic' }).click();
@@ -107,7 +107,7 @@ test('an exhausted result exposes its final matrix independently of tentative tr
 });
 
 test('solver replay restarts retained evidence and speed changes keep it playing', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByRole('button', { name: 'Run Basic' }).click();
   const panel = page.getByRole('article', { name: 'Basic result' });
   await panel.getByLabel('Retained trace frame').focus();
@@ -120,7 +120,7 @@ test('solver replay restarts retained evidence and speed changes keep it playing
 });
 
 test('finite nonnegative exhaustion is reported separately from shipment approval', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/lab');
   await page.getByLabel('Maximum update pairs').fill('1');
   const response = page.waitForResponse('**/api/solve');
   await page.getByRole('button', { name: 'Run Basic' }).click();
