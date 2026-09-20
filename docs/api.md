@@ -25,7 +25,7 @@ application is accepting requests.
 }
 ```
 
-`solver` is `Basic` or `LogDomain`; `traceMode` is `None` or `Phases`. Enum
+`requestId` must contain 1–256 characters. `solver` is `Basic` or `LogDomain`; `traceMode` is `None` or `Phases`. Enum
 fields must be strings. Source and target lengths are 1–8, the matrix must be
 rectangular and dimensionally exact, and `maxIterations` is 1–1,000. The API
 also applies the library's finite-value, positive-setting, and equal-total

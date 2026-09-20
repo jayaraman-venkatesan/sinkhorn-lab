@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source and pinned library
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - name: Install pinned Node
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 24.19.0
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore locked dependencies
+        run: dotnet restore --locked-mode
+
+      - name: Verify backend and compiled example
+        run: |
+          dotnet test -c Release --no-restore
+          dotnet format --verify-no-changes --no-restore
+          dotnet build -c Release --no-restore
+          dotnet run --project examples/LessonUsage/LessonUsage.csproj -c Release --no-restore
+
+      - name: Install frontend and Chromium
+        working-directory: web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Verify frontend and shared content
+        run: |
+          cd web
+          npm test -- --run
+          npm run typecheck
+          npm run lint
+          npm run build
+          npm run test:e2e
+          cd ..
+          node scripts/verify-content.mjs
+
+      - name: Build and start packaged application
+        run: docker compose up --build --detach
+
+      - name: Verify packaged application
+        working-directory: web
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:8080
+        run: npm run test:deployment
+
+      - name: Stop packaged application
+        if: always()
+        run: docker compose down

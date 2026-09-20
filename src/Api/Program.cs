@@ -12,6 +12,12 @@ builder.Services.AddProblemDetails();
 WebApplication app = builder.Build();
 
 app.UseExceptionHandler();
+bool hasWebRoot = Directory.Exists(app.Environment.WebRootPath);
+if (hasWebRoot)
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+}
 app.Use(async (context, next) =>
 {
     ApiResourceLimits limits = context.RequestServices
@@ -33,6 +39,11 @@ app.Use(async (context, next) =>
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ready" }));
 app.MapPost("/api/solve", SolveAsync);
+app.Map("/api/{**path}", () => Results.NotFound());
+if (hasWebRoot)
+{
+    app.MapFallbackToFile("index.html");
+}
 
 app.Run();
 
