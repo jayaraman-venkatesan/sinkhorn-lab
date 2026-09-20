@@ -52,7 +52,7 @@ describe('playback clock', () => {
     expect(state.progress).toBeCloseTo(0.8, 12);
   });
 
-  it('scrubs backward and changes speed by preserving progress at the action time', () => {
+  it('scrubs backward and resumes from the requested progress', () => {
     let state = shipmentState(0);
     state = reduce(state, { type: 'Play', elapsedMs: 0 });
     state = reduce(state, { type: 'Tick', elapsedMs: 500 });
@@ -64,8 +64,22 @@ describe('playback clock', () => {
     });
 
     state = reduce(state, { type: 'Tick', elapsedMs: 600 });
-    state = reduce(state, { type: 'SetSpeed', speed: 2, elapsedMs: 600 });
-    state = reduce(state, { type: 'Tick', elapsedMs: 700 });
+    expect(state.progress).toBeCloseTo(0.35, 12);
+  });
+
+  it('changes speed between ticks using progress at the action time', () => {
+    let state = shipmentState(0);
+    state = reduce(state, { type: 'Play', elapsedMs: 0 });
+    state = reduce(state, { type: 'Tick', elapsedMs: 200 });
+    state = reduce(state, { type: 'SetSpeed', speed: 2, elapsedMs: 350 });
+
+    expect(state).toMatchObject({
+      progress: 0.35,
+      anchorProgress: 0.35,
+      anchorElapsedMs: 350,
+      speed: 2,
+    });
+    state = reduce(state, { type: 'Tick', elapsedMs: 450 });
     expect(state.progress).toBeCloseTo(0.55, 12);
   });
 

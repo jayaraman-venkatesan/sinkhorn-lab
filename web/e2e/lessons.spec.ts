@@ -1,5 +1,18 @@
 import { expect, test } from '@playwright/test';
 
+test('shared scaling equations render destination then source fractions as accessible mathematics', async ({ page }) => {
+  await page.goto('/lessons/04-regularization');
+  const updates = page.locator('.lesson .katex-display').filter({ has: page.locator('annotation', { hasText: /^(v_j|u_i)\s*=/ }) });
+  await expect(updates).toHaveCount(2);
+  await expect(updates.nth(0).locator('annotation')).toContainText('v_j = \\frac{b_j}{\\sum_i K_{ij}u_i}');
+  await expect(updates.nth(1).locator('annotation')).toContainText('u_i = \\frac{1}{\\sum_j ((1/a_i)K_{ij})v_j}');
+  for (const update of await updates.all()) {
+    await expect(update.locator('.katex-html')).toBeVisible();
+    await expect(update.locator('.katex-mathml math mfrac')).toHaveCount(1);
+  }
+  await expect(page.locator('.katex-error')).toHaveCount(0);
+});
+
 test('chapter navigation renders shared prose, accessible math, and the lab', async ({ page }) => {
   await page.goto('/');
 

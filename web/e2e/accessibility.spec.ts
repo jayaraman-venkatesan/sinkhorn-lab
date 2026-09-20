@@ -1,5 +1,33 @@
 import { expect, test } from '@playwright/test';
 
+test('enabled unselected mode tabs retain readable text on hover', async ({ page }) => {
+  await page.goto('/lab');
+  await page.getByRole('button', { name: 'Run Basic' }).click();
+  const panel = page.getByRole('article', { name: 'Basic result' });
+  for (const name of ['Solver', 'Shipment']) {
+    const other = name === 'Solver' ? 'Shipment' : 'Solver';
+    await panel.getByRole('tab', { name: other, exact: true }).click();
+    const tab = panel.getByRole('tab', { name, exact: true });
+    await expect(tab).toBeEnabled();
+    await tab.hover();
+    await expect(tab).toHaveAttribute('aria-selected', 'false');
+    const contrast = await tab.evaluate((element) => {
+      const style = getComputedStyle(element);
+      const luminance = (color: string) => {
+        const [r, g, b] = color.match(/[\d.]+/g)!.slice(0, 3).map(Number).map((value) => {
+          const channel = value / 255;
+          return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+      };
+      const foreground = luminance(style.color);
+      const background = luminance(style.backgroundColor);
+      return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+    });
+    expect(contrast, `${name} hover text contrast`).toBeGreaterThanOrEqual(4.5);
+  }
+});
+
 test('reduced motion uses explicit shipment steps and readable phase states', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/lab');
