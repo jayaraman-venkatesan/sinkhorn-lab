@@ -196,3 +196,92 @@ must pass its monotonic animation timestamp into the reducer, use
 `retainedFrameIndex` only as a retained-array position, obtain numerical values
 from `selectTraceFrame`, and call `shipmentAt` only after the decoded result's
 `checks.usable` gate succeeds.
+
+## Fix round 1 — consecutive timestamp monotonicity
+
+Reviewer finding: ordinary ticks intentionally left `anchorElapsedMs` fixed, but
+the reducer also used that anchor as its timestamp-ordering watermark. After a
+tick at 600 ms from a 100 ms anchor, a tick at 500 ms therefore passed validation
+and moved progress backward. Paused ticks returned the original state, so they
+did not record their timestamp at all.
+
+Production mutations caught: validating against the playback anchor instead of
+the latest accepted timestamp, or failing to observe time while paused.
+
+The first regression placed both cases in one test. Its genuine RED was:
+
+```text
+npm test -- --run tests/clock.test.ts
+```
+
+Exit 1; 1 failed and 11 passed. The playing assertion failed with
+`expected function to throw an error, but it didn't`; because that assertion
+stopped the test, the paused path had not yet executed.
+
+The cases were then split before production changed so each failure was
+independently observed. The second genuine RED used the same command:
+
+```text
+npm test -- --run tests/clock.test.ts
+```
+
+Exit 1; 2 failed and 11 passed. Both the playing consecutive-tick case and the
+paused consecutive-tick case failed with
+`expected function to throw an error, but it didn't`.
+
+Implementation added `latestElapsedMs` as a separate monotonic watermark.
+Ordinary playing and paused ticks update it, while `anchorElapsedMs` remains the
+unchanged absolute origin used to calculate progress. GREEN command:
+
+```text
+npm test -- --run tests/clock.test.ts
+```
+
+Exit 0; 1 file passed, 13 tests passed.
+
+One remaining no-transition path was then isolated: an unusable Shipment request
+is correctly gated, but its valid absolute timestamp is still observed by the
+clock. The added expectation produced this RED:
+
+```text
+npm test -- --run tests/clock.test.ts
+```
+
+Exit 1; 1 failed and 12 passed. The gate test expected
+`latestElapsedMs: 75` and received `latestElapsedMs: 50`.
+
+The minimal change preserved Solver mode and shipment progress while recording
+the observed timestamp. GREEN command:
+
+```text
+npm test -- --run tests/clock.test.ts
+```
+
+Exit 0; 1 file passed, 13 tests passed.
+
+Final covering verification after the fix:
+
+```text
+npm test -- --run
+```
+
+Exit 0; 6 test files passed, 69 tests passed.
+
+```text
+npm run typecheck
+```
+
+Exit 0; `tsc --noEmit` produced no diagnostics.
+
+```text
+npm run lint
+```
+
+Exit 0; `eslint .` produced no diagnostics.
+
+```text
+npm run build
+```
+
+Exit 0; TypeScript checking and Vite production build completed, with 21
+modules transformed.

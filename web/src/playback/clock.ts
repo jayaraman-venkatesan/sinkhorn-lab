@@ -12,6 +12,7 @@ export type PlaybackState = {
   durationMs: number;
   anchorElapsedMs: number;
   anchorProgress: number;
+  latestElapsedMs: number;
 };
 
 /**
@@ -44,6 +45,7 @@ export function createPlaybackState(durationMs: number, elapsedMs = 0): Playback
     durationMs,
     anchorElapsedMs: elapsedMs,
     anchorProgress: 0,
+    latestElapsedMs: elapsedMs,
   };
 }
 
@@ -51,7 +53,7 @@ export function playbackReducer(
   state: PlaybackState,
   action: PlaybackAction,
 ): PlaybackState {
-  assertAbsoluteTime(action.elapsedMs, state.anchorElapsedMs);
+  assertAbsoluteTime(action.elapsedMs, state.latestElapsedMs);
 
   switch (action.type) {
     case 'Play':
@@ -96,7 +98,9 @@ export function playbackReducer(
       };
     }
     case 'ShowShipment':
-      if (!action.checks.usable) return state;
+      if (!action.checks.usable) {
+        return { ...state, latestElapsedMs: action.elapsedMs };
+      }
       return {
         ...reanchor(state, action.elapsedMs, state.progress, false),
         mode: 'Shipment',
@@ -105,13 +109,13 @@ export function playbackReducer(
 }
 
 function stateAt(state: PlaybackState, elapsedMs: number): PlaybackState {
-  if (!state.playing) return state;
+  if (!state.playing) return { ...state, latestElapsedMs: elapsedMs };
 
   const progress = clampProgress(
     state.anchorProgress +
       ((elapsedMs - state.anchorElapsedMs) * state.speed) / state.durationMs,
   );
-  if (progress < 1) return { ...state, progress };
+  if (progress < 1) return { ...state, progress, latestElapsedMs: elapsedMs };
 
   return reanchor(state, elapsedMs, 1, false);
 }
@@ -128,6 +132,7 @@ function reanchor(
     playing,
     anchorElapsedMs: elapsedMs,
     anchorProgress: progress,
+    latestElapsedMs: elapsedMs,
   };
 }
 

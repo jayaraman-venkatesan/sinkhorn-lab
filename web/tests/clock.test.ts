@@ -18,6 +18,23 @@ describe('playback clock', () => {
     expect(state.anchorProgress).toBe(0);
   });
 
+  it('rejects time older than the preceding playing tick without replacing the playback anchor', () => {
+    let playing = shipmentState(100);
+    playing = reduce(playing, { type: 'Play', elapsedMs: 100 });
+    playing = reduce(playing, { type: 'Tick', elapsedMs: 600 });
+
+    expect(playing.anchorElapsedMs).toBe(100);
+    expect(() => reduce(playing, { type: 'Tick', elapsedMs: 500 })).toThrow(RangeError);
+  });
+
+  it('rejects time older than the preceding paused tick', () => {
+    let paused = shipmentState(100);
+    paused = reduce(paused, { type: 'Tick', elapsedMs: 600 });
+
+    expect(paused.progress).toBe(0);
+    expect(() => reduce(paused, { type: 'Tick', elapsedMs: 500 })).toThrow(RangeError);
+  });
+
   it('pauses and resumes from new absolute anchors without adding paused time', () => {
     let state = shipmentState(100);
     state = reduce(state, { type: 'Play', elapsedMs: 100 });
@@ -79,7 +96,11 @@ describe('playback clock', () => {
       elapsedMs: 75,
     });
 
-    expect(blocked).toBe(solver);
+    expect(blocked).toMatchObject({
+      mode: 'Solver',
+      progress: 0,
+      latestElapsedMs: 75,
+    });
     expect(allowed).toMatchObject({
       mode: 'Shipment',
       playing: false,
