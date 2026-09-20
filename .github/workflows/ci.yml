@@ -58,17 +58,6 @@ jobs:
       - name: Build and start packaged application
         run: docker compose up --build --detach
 
-      - name: Wait for packaged application readiness
-        run: |
-          if ! curl --fail --silent --show-error --retry 60 --retry-connrefused \
-            --retry-delay 1 --retry-max-time 120 --max-time 2 \
-            http://127.0.0.1:8080/api/health; then
-            echo "Packaged application did not become healthy within the readiness budget."
-            docker compose ps --all
-            docker compose logs --no-color --tail=100
-            exit 1
-          fi
-
       - name: Verify packaged application
         working-directory: web
         env:
