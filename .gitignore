@@ -90,6 +90,11 @@ out
 dist
 .output
 
+# Browser test artifacts
+/web/test-results/
+/web/playwright-report/
+/web/blob-report/
+
 # Gatsby files
 .cache/
 # Comment in the public line in if your project uses Gatsby and not Next.js

@@ -59,6 +59,83 @@ describe('strict solve client', () => {
     expect(() => decodeSolveResponse(payload)).toThrow(SolveDecodeError);
   });
 
+  it.each([
+    ['an empty plan', { ...solveFixture(), plan: [] }],
+    [
+      'a ragged plan',
+      { ...solveFixture(), plan: [[0.5, 0.5], [1]] },
+    ],
+    [
+      'source scaling that does not match plan rows',
+      {
+        ...solveFixture(),
+        scaling: { ...solveFixture().scaling, source: [1] },
+      },
+    ],
+    [
+      'a trace plan that does not match the final plan shape',
+      {
+        ...solveFixture(),
+        trace: {
+          ...solveFixture().trace,
+          frames: [{ ...solveFixture().trace.frames[0]!, plan: [[1]] }],
+        },
+      },
+    ],
+    [
+      'trace scaling that does not match the final plan shape',
+      {
+        ...solveFixture(),
+        trace: {
+          ...solveFixture().trace,
+          frames: [{ ...solveFixture().trace.frames[0]!, targetScaling: [1] }],
+        },
+      },
+    ],
+  ])('rejects %s', (_label, payload) => {
+    expect(() => decodeSolveResponse(payload)).toThrow(SolveDecodeError);
+  });
+
+  it.each([
+    ['negative attempted pairs', { ...solveFixture(), attemptedPairs: -1 }],
+    ['accepted pairs above attempted pairs', { ...solveFixture(), acceptedPairs: 12 }],
+    [
+      'attempted pairs above the effective iteration budget',
+      {
+        ...solveFixture(),
+        attemptedPairs: 11,
+        acceptedPairs: 11,
+        lastAttemptedIndex: 10,
+        options: { ...solveFixture().options, maxIterations: 10 },
+      },
+    ],
+    ['an impossible last attempted index', { ...solveFixture(), lastAttemptedIndex: 9 }],
+    [
+      'a negative retained trace count',
+      { ...solveFixture(), trace: { ...solveFixture().trace, observedCount: -1 } },
+    ],
+    [
+      'trace counts inconsistent with retained frames',
+      { ...solveFixture(), trace: { ...solveFixture().trace, omittedCount: 1 } },
+    ],
+  ])('rejects %s', (_label, payload) => {
+    expect(() => decodeSolveResponse(payload)).toThrow(SolveDecodeError);
+  });
+
+  it('rejects more than 200 retained trace frames', () => {
+    const frame = solveFixture().trace.frames[0]!;
+    const payload = {
+      ...solveFixture(),
+      trace: {
+        ...solveFixture().trace,
+        frames: Array.from({ length: 201 }, () => structuredClone(frame)),
+        observedCount: 201,
+      },
+    };
+
+    expect(() => decodeSolveResponse(payload)).toThrow(SolveDecodeError);
+  });
+
   it('surfaces non-200 Problem Details distinctly from solver results', async () => {
     vi.stubGlobal(
       'fetch',
@@ -119,6 +196,30 @@ describe('strict solve client', () => {
         new AbortController().signal,
       ),
     ).rejects.toThrow('response identity does not match the solve request');
+  });
+
+  it('rejects response dimensions that do not match the submitted problem', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify(solveFixture('Basic', 'one-by-one')))),
+    );
+
+    await expect(
+      solve(
+        {
+          requestId: 'one-by-one',
+          source: [1],
+          target: [1],
+          costs: [[0]],
+          regularization: 1,
+          solver: 'Basic',
+          maxIterations: 1,
+          threshold: 1e-9,
+          traceMode: 'Phases',
+        },
+        new AbortController().signal,
+      ),
+    ).rejects.toThrow('response dimensions do not match the solve request');
   });
 
   it('awaits Basic then LogDomain with identical numerical settings', async () => {

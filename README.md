@@ -35,11 +35,13 @@ Use Node 24 LTS and the committed npm lockfile:
 cd web
 npm ci
 npm test -- --run
+npm run test:e2e
 npm run typecheck
 npm run lint
 npm run build
 npm run dev
 ```
 
-The Vite development server proxies `/api` to `http://127.0.0.1:5000`. Start the
-API separately before making real solve requests from the editor.
+Start the API for frontend development with
+`ASPNETCORE_URLS=http://127.0.0.1:5080 dotnet run --project src/Api/Api.csproj`.
+The Vite development server proxies `/api` to that loopback address.

@@ -27,42 +27,38 @@ const initialScenario: Scenario = {
 
 export default function App() {
   const [state, dispatch] = useReducer(scenarioReducer, initialScenario, createEditorState);
-  const activeController = useRef<AbortController | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
   const errors = validateScenario(state.scenario);
 
-  useEffect(() => () => activeController.current?.abort(), []);
+  useEffect(() => () => controllerRef.current?.abort(), []);
 
   function edit(scenario: Scenario) {
-    activeController.current?.abort();
-    activeController.current = null;
+    controllerRef.current?.abort();
+    controllerRef.current = null;
     dispatch({ type: 'Edit', scenario });
   }
 
   function cancel() {
-    activeController.current?.abort();
-    activeController.current = null;
+    controllerRef.current?.abort();
+    controllerRef.current = null;
     dispatch({ type: 'Cancel' });
   }
 
   async function run(choice: SolverKind | 'Compare') {
     if (validateScenario(state.scenario).length > 0) return;
-    activeController.current?.abort();
+    controllerRef.current?.abort();
     const controller = new AbortController();
-    activeController.current = controller;
-    const revision = state.revision;
+    controllerRef.current = controller;
     const requestId = crypto.randomUUID();
+    const revision = state.revision;
     dispatch({ type: 'RunStarted', requestId, revision });
-
     try {
       if (choice === 'Compare') {
         await solveComparison(state.scenario, requestId, controller.signal, (result, isLast) => {
           dispatch({ type: 'RunFinished', requestId, revision, result, isLast });
         });
       } else {
-        const result = await solve(
-          scenarioRequest(state.scenario, choice, requestId),
-          controller.signal,
-        );
+        const result = await solve(scenarioRequest(state.scenario, choice, requestId), controller.signal);
         dispatch({ type: 'RunFinished', requestId, revision, result, isLast: true });
       }
     } catch (error) {
@@ -75,17 +71,19 @@ export default function App() {
         });
       }
     } finally {
-      if (activeController.current === controller) activeController.current = null;
+      if (controllerRef.current === controller) controllerRef.current = null;
     }
   }
 
   return (
-    <ScenarioEditor
-      state={state}
-      errors={errors}
-      onEdit={edit}
-      onRun={(choice) => void run(choice)}
-      onCancel={cancel}
-    />
+    <main>
+      <ScenarioEditor
+        state={state}
+        errors={errors}
+        onEdit={edit}
+        onRun={(choice) => void run(choice)}
+        onCancel={cancel}
+      />
+    </main>
   );
 }
