@@ -57,6 +57,57 @@ test('previews every custom cost replacement before cancel or confirmation', asy
   await expect(firstCost).toBeDisabled();
 });
 
+test('keeps keyboard focus inside the replacement preview and Escape cancels', async ({ page }) => {
+  await page.goto('/');
+  const mode = page.getByLabel('Cost mode');
+  const sourceX = page.getByLabel('Warehouse A X position');
+  const firstCost = page.getByLabel('Cost from Warehouse A to Destination A');
+
+  await mode.selectOption('Custom');
+  await firstCost.fill('123');
+  await mode.selectOption('Distance');
+
+  const preview = page.getByRole('dialog', { name: 'Replace custom costs?' });
+  const keepCustom = preview.getByRole('button', { name: 'Keep custom costs' });
+  await expect(keepCustom).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(preview.getByRole('button', { name: 'Replace costs' })).toBeFocused();
+  await sourceX.focus();
+  await expect(sourceX).not.toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(preview).toHaveCount(0);
+  await expect(mode).toHaveValue('Custom');
+  await expect(firstCost).toHaveValue('123');
+});
+
+test('applies the exact distance matrix shown in the replacement preview', async ({ page }) => {
+  await page.goto('/');
+  const mode = page.getByLabel('Cost mode');
+  const sourceX = page.getByLabel('Warehouse A X position');
+  const firstCost = page.getByLabel('Cost from Warehouse A to Destination A');
+
+  await mode.selectOption('Custom');
+  await mode.selectOption('Distance');
+  const preview = page.getByRole('dialog', { name: 'Replace custom costs?' });
+  await expect(
+    preview.getByRole('row', { name: /Warehouse A to Destination A 60 60/ }),
+  ).toBeVisible();
+
+  await sourceX.evaluate((element) => {
+    const input = element as HTMLInputElement;
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (!setValue) throw new Error('The browser did not expose the input value setter.');
+    setValue.call(input, '16');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect(sourceX).toHaveValue('16');
+
+  await preview.getByRole('button', { name: 'Replace costs' }).click();
+  await expect(mode).toHaveValue('Distance');
+  await expect(firstCost).toHaveValue('60');
+});
+
 test('runs Basic through the real API and renders its result', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Run Basic' }).click();

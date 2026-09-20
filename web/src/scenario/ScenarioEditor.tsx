@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { DiagnosticNumber, Point, Scenario, SolverKind } from '../contracts';
 import { distanceCosts } from './costs';
 import type { EditorState } from './model';
@@ -120,8 +120,25 @@ function ReplacementPreview({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.showModal();
+    return () => dialog.close();
+  }, []);
+
   return (
-    <section className="preview" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+    <dialog
+      ref={dialogRef}
+      className="preview"
+      aria-labelledby="preview-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        onCancel();
+      }}
+    >
       <h2 id="preview-title">Replace custom costs?</h2>
       <p>Review every custom value before replacing it with straight-line distance.</p>
       <div className="table-scroll">
@@ -149,10 +166,10 @@ function ReplacementPreview({
         </table>
       </div>
       <div className="actions">
-        <button type="button" className="quiet" onClick={onCancel}>Keep custom costs</button>
+        <button type="button" className="quiet" autoFocus onClick={onCancel}>Keep custom costs</button>
         <button type="button" onClick={onConfirm}>Replace costs</button>
       </div>
-    </section>
+    </dialog>
   );
 }
 
@@ -307,7 +324,11 @@ export function ScenarioEditor({ state, errors, onEdit, onRun, onCancel }: Scena
           replacements={replacements}
           onCancel={() => setReplacements(null)}
           onConfirm={() => {
-            onEdit(changeCostMode(scenario, 'Distance', () => true));
+            onEdit({
+              ...scenario,
+              costMode: 'Distance',
+              costs: replacements.map((row) => [...row]),
+            });
             setReplacements(null);
           }}
         />
