@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/Api/Api.csproj" />
+  <Project Path="tests/Api.Tests/Api.Tests.csproj" />
+  <Project Path="vendor/sinkhorn/src/Sinkhorn/Sinkhorn.csproj" />
+</Solution>

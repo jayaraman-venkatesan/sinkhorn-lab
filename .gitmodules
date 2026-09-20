@@ -1,0 +1,3 @@
+[submodule "vendor/sinkhorn"]
+	path = vendor/sinkhorn
+	url = https://github.com/jayaraman-venkatesan/sinkhorn-dotnet.git
