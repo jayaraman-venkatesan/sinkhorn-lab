@@ -26,6 +26,26 @@ export type TraceMode = 'None' | 'Phases';
 export type TerminationReason = 'ThresholdMet' | 'IterationLimit' | 'NumericalBreakdown';
 export type TracePhase = 'Initial' | 'AfterDestination' | 'AfterSource' | 'Restored';
 
+export type TraceFrame = {
+  index: number;
+  phase: TracePhase;
+  solver: SolverKind;
+  sourceScaling: DiagnosticNumber[];
+  targetScaling: DiagnosticNumber[];
+  isLog: boolean;
+  rejected: boolean;
+  plan: DiagnosticNumber[][];
+};
+
+export type SolveChecks = {
+  finite: boolean;
+  nonnegative: boolean;
+  sourceL1: DiagnosticNumber;
+  targetL1: DiagnosticNumber;
+  totalMass: DiagnosticNumber;
+  usable: boolean;
+};
+
 export type SolveRequest = {
   requestId: string;
   source: number[];
@@ -58,26 +78,10 @@ export type SolveResponse = {
   acceptedPairs: number;
   errors: Array<{ index: number; targetL2: DiagnosticNumber }>;
   scaling: { source: DiagnosticNumber[]; target: DiagnosticNumber[]; isLog: boolean };
-  checks: {
-    finite: boolean;
-    nonnegative: boolean;
-    sourceL1: DiagnosticNumber;
-    targetL1: DiagnosticNumber;
-    totalMass: DiagnosticNumber;
-    usable: boolean;
-  };
+  checks: SolveChecks;
   warnings: string[];
   trace: {
-    frames: Array<{
-      index: number;
-      phase: TracePhase;
-      solver: SolverKind;
-      sourceScaling: DiagnosticNumber[];
-      targetScaling: DiagnosticNumber[];
-      isLog: boolean;
-      rejected: boolean;
-      plan: DiagnosticNumber[][];
-    }>;
+    frames: TraceFrame[];
     observedCount: number;
     omittedCount: number;
     sampled: boolean;
