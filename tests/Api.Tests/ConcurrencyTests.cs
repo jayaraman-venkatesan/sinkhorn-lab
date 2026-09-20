@@ -29,9 +29,10 @@ public sealed class ConcurrencyTests
             ValidRequest,
             TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.TooManyRequests, second.StatusCode);
         hook.Release();
         using HttpResponseMessage completed = await first;
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, second.StatusCode);
         Assert.Equal(HttpStatusCode.OK, completed.StatusCode);
     }
 

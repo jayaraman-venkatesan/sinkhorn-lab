@@ -39,9 +39,13 @@ public sealed class SolveService
                 deadline.Token);
             try
             {
-                return await Task.Run(() => Solve(request, linked.Token), CancellationToken.None);
+                return await Task.Run(
+                    () => Solve(request, linked.Token),
+                    CancellationToken.None);
             }
-            catch (OperationCanceledException) when (deadline.IsCancellationRequested && !requestAborted.IsCancellationRequested)
+            catch (OperationCanceledException) when (
+                deadline.IsCancellationRequested &&
+                !requestAborted.IsCancellationRequested)
             {
                 throw new SolveTimeoutException();
             }

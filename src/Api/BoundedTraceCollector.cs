@@ -4,23 +4,10 @@ public sealed class BoundedTraceCollector : ITraceObserver
 {
     public const int DefaultRetainedFrameLimit = 200;
 
-    private readonly int retainedFrameLimit;
-    private readonly List<RetainedFrame> frames = [];
+    private readonly List<ObservedFrame> retained = [];
     private int currentIndex = -1;
-    private int previousIndex = -2;
+    private int priorIndex = -2;
     private int stride = 1;
-
-    public BoundedTraceCollector(int retainedFrameLimit = DefaultRetainedFrameLimit)
-    {
-        if (retainedFrameLimit < 5)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(retainedFrameLimit),
-                "At least five slots are needed for required trace evidence.");
-        }
-
-        this.retainedFrameLimit = retainedFrameLimit;
-    }
 
     public int ObservedCount { get; private set; }
 
@@ -29,71 +16,71 @@ public sealed class BoundedTraceCollector : ITraceObserver
         ObservedCount++;
         if (frame.Index >= 0 && frame.Index != currentIndex)
         {
-            previousIndex = currentIndex;
+            priorIndex = currentIndex;
             currentIndex = frame.Index;
         }
 
         if (frame.Phase == TracePhase.Restored)
         {
-            for (int i = 0; i < frames.Count; i++)
+            for (int i = 0; i < retained.Count; i++)
             {
-                if (frames[i].Frame.Index == frame.Index)
+                if (retained[i].Frame.Index == frame.Index)
                 {
-                    frames[i] = frames[i] with { Rejected = true };
+                    retained[i] = retained[i] with { Rejected = true };
                 }
             }
         }
 
-        frames.Add(new RetainedFrame(Copy(frame), frame.Rejected));
+        retained.Add(new ObservedFrame(Copy(frame), frame.Rejected));
         Compact();
     }
 
     public TraceResponse Materialize(double[,] costs, double regularization)
     {
-        List<TraceFrameResponse> result = frames
+        List<TraceFrameResponse> frames = retained
             .Select(item => ToResponse(item, costs, regularization))
             .ToList();
-        int omitted = ObservedCount - result.Count;
+        int omitted = ObservedCount - frames.Count;
         string policy = omitted == 0
-            ? "All observed phases retained within the bounded collector."
-            : $"Initial, latest accepted/current pair, and restoration evidence retained; " +
-              $"interior iteration indices sampled at deterministic stride {stride}; explicit gaps account for {omitted} omitted phases.";
-        return new TraceResponse(result, ObservedCount, omitted, omitted > 0, policy);
+            ? "Every observed phase was retained within the 200-frame limit."
+            : $"Initial, last accepted/current pair, and restoration evidence retained; " +
+              $"interior indices use deterministic stride {stride}, leaving {omitted} explicit phase gaps.";
+        return new TraceResponse(frames, ObservedCount, omitted, omitted > 0, policy);
     }
 
     private void Compact()
     {
-        while (frames.Count > retainedFrameLimit)
+        while (retained.Count > DefaultRetainedFrameLimit)
         {
             stride *= 2;
-            frames.RemoveAll(item =>
-                !IsEssential(item.Frame) && item.Frame.Index % stride != 0);
+            retained.RemoveAll(item =>
+                !IsEssential(item.Frame) &&
+                item.Frame.Index % stride != 0);
 
-            if (frames.Count > retainedFrameLimit)
+            if (retained.Count > DefaultRetainedFrameLimit)
             {
-                int removable = frames.FindIndex(item => !IsEssential(item.Frame));
-                if (removable < 0)
+                int oldestInterior = retained.FindIndex(item => !IsEssential(item.Frame));
+                if (oldestInterior < 0)
                 {
-                    throw new InvalidOperationException("Required trace evidence exceeds the retention limit.");
+                    throw new InvalidOperationException("Required trace evidence exceeds the frame limit.");
                 }
 
-                frames.RemoveAt(removable);
+                retained.RemoveAt(oldestInterior);
             }
         }
     }
 
     private bool IsEssential(TraceFrame frame) =>
-        frame.Phase == TracePhase.Initial ||
-        frame.Phase == TracePhase.Restored ||
+        frame.Phase is TracePhase.Initial or TracePhase.Restored ||
         frame.Index == currentIndex ||
-        frame.Index == previousIndex;
+        frame.Index == priorIndex;
 
     private TraceFrameResponse ToResponse(
-        RetainedFrame retained,
+        ObservedFrame observed,
         double[,] costs,
         double regularization)
     {
-        TraceFrame frame = retained.Frame;
+        TraceFrame frame = observed.Frame;
         bool isLog = frame.Solver == SolverKind.LogDomain;
         return new TraceFrameResponse(
             frame.Index,
@@ -102,7 +89,7 @@ public sealed class BoundedTraceCollector : ITraceObserver
             ToDiagnostic(frame.SourceScaling),
             ToDiagnostic(frame.TargetScaling),
             isLog,
-            retained.Rejected,
+            observed.Rejected,
             MaterializePlan(frame, costs, regularization))
         {
             Essential = IsEssential(frame),
@@ -129,13 +116,9 @@ public sealed class BoundedTraceCollector : ITraceObserver
             result[i] = new DiagnosticNumber[frame.TargetScaling.Length];
             for (int j = 0; j < result[i].Length; j++)
             {
-                double exponent = isLog
-                    ? frame.SourceScaling[i] + frame.TargetScaling[j] - (costs[i, j] / regularization)
-                    : 0.0;
-                double value = isLog
-                    ? Math.Exp(exponent)
+                result[i][j] = isLog
+                    ? Math.Exp(frame.SourceScaling[i] + frame.TargetScaling[j] - (costs[i, j] / regularization))
                     : frame.SourceScaling[i] * Math.Exp(costs[i, j] / -regularization) * frame.TargetScaling[j];
-                result[i][j] = value;
             }
         }
 
@@ -145,5 +128,5 @@ public sealed class BoundedTraceCollector : ITraceObserver
     private static DiagnosticNumber[] ToDiagnostic(double[] values) =>
         values.Select(value => new DiagnosticNumber(value)).ToArray();
 
-    private sealed record RetainedFrame(TraceFrame Frame, bool Rejected);
+    private sealed record ObservedFrame(TraceFrame Frame, bool Rejected);
 }

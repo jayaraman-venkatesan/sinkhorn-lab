@@ -148,7 +148,7 @@ static IResult SerializeBounded(
             {
                 OmittedCount = response.Trace.OmittedCount + 1,
                 Sampled = true,
-                Policy = "Additional optional interior frames were removed to satisfy the response-size limit; essential endpoint/failure evidence is retained.",
+                Policy = "Optional interior phases were removed for the response-size limit; final and failure evidence remains retained.",
             },
         };
     }

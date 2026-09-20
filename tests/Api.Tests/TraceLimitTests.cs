@@ -73,31 +73,59 @@ public sealed class TraceLimitTests
         Assert.Equal([false, true, true, false], rejected);
     }
 
-    [Fact]
-    public void TracingDoesNotChangeRealLibraryResult()
+    [Theory]
+    [InlineData(SolverKind.Basic, false)]
+    [InlineData(SolverKind.Basic, true)]
+    [InlineData(SolverKind.LogDomain, false)]
+    public void TracingDoesNotChangeAnyRealLibraryResultField(
+        SolverKind solver,
+        bool rollback)
     {
-        var problem = new TransportProblem(
-            [0.4, 0.6],
-            [0.2, 0.3, 0.5],
-            new double[,] { { 0.0, 1.0, 2.0 }, { 1.0, 0.0, 1.0 } });
+        TransportProblem problem = rollback
+            ? new TransportProblem(
+                [1.0, 0.0],
+                [0.0, 1.0],
+                new double[,] { { 0.0, 1.0 }, { 1.0, 0.0 } })
+            : new TransportProblem(
+                [0.4, 0.6],
+                [0.2, 0.3, 0.5],
+                new double[,] { { 0.0, 1.0, 2.0 }, { 1.0, 0.0, 1.0 } });
         var collector = new BoundedTraceCollector();
 
         SolverResult withoutTrace = SinkhornSolver.Solve(
             problem,
             0.7,
-            SolverKind.LogDomain,
+            solver,
             cancellationToken: TestContext.Current.CancellationToken);
         SolverResult withTrace = SinkhornSolver.Solve(
             problem,
             0.7,
-            SolverKind.LogDomain,
+            solver,
             observer: collector,
             cancellationToken: TestContext.Current.CancellationToken);
 
+        Assert.Equal(withoutTrace.Solver, withTrace.Solver);
+        Assert.Equal(Flatten(withoutTrace.Plan), Flatten(withTrace.Plan));
         Assert.Equal(withoutTrace.Termination, withTrace.Termination);
         Assert.Equal(withoutTrace.LastAttemptedIndex, withTrace.LastAttemptedIndex);
+        Assert.Equal(withoutTrace.AttemptedPairs, withTrace.AttemptedPairs);
+        Assert.Equal(withoutTrace.AcceptedPairs, withTrace.AcceptedPairs);
+        Assert.Equal(
+            withoutTrace.Errors.Select(error => (error.Index, error.TargetL2)),
+            withTrace.Errors.Select(error => (error.Index, error.TargetL2)));
+        Assert.Equal(withoutTrace.Scaling.Source, withTrace.Scaling.Source);
+        Assert.Equal(withoutTrace.Scaling.Target, withTrace.Scaling.Target);
+        Assert.Equal(withoutTrace.Scaling.IsLog, withTrace.Scaling.IsLog);
+        Assert.Equal(withoutTrace.Checks.Finite, withTrace.Checks.Finite);
+        Assert.Equal(withoutTrace.Checks.Nonnegative, withTrace.Checks.Nonnegative);
+        Assert.Equal(withoutTrace.Checks.SourceL1, withTrace.Checks.SourceL1);
+        Assert.Equal(withoutTrace.Checks.TargetL1, withTrace.Checks.TargetL1);
+        Assert.Equal(withoutTrace.Checks.TotalMass, withTrace.Checks.TotalMass);
+        Assert.Equal(withoutTrace.Checks.Usable, withTrace.Checks.Usable);
         Assert.Equal(withoutTrace.TransportCost, withTrace.TransportCost);
-        Assert.Equal(Flatten(withoutTrace.Plan), Flatten(withTrace.Plan));
+        Assert.Equal(withoutTrace.Warnings, withTrace.Warnings);
+        AssertMetadataEqual(withoutTrace.Metadata, withTrace.Metadata);
+        Assert.True(collector.ObservedCount > 0);
     }
 
     [Fact]
@@ -190,6 +218,33 @@ public sealed class TraceLimitTests
         }
 
         return values;
+    }
+
+    private static void AssertMetadataEqual(SolverMetadata expected, SolverMetadata actual)
+    {
+        Assert.Equal(expected.Solver, actual.Solver);
+        Assert.Equal(expected.ReferenceVersion, actual.ReferenceVersion);
+        Assert.Equal(expected.ReferenceCommit, actual.ReferenceCommit);
+        Assert.Equal(expected.Regularization, actual.Regularization);
+        Assert.Equal(expected.EffectiveOptions.MaxIterations, actual.EffectiveOptions.MaxIterations);
+        Assert.Equal(expected.EffectiveOptions.Threshold, actual.EffectiveOptions.Threshold);
+        Assert.Equal(expected.PreprocessingPolicy, actual.PreprocessingPolicy);
+        Assert.Equal(expected.SourceTotal, actual.SourceTotal);
+        Assert.Equal(expected.TargetTotal, actual.TargetTotal);
+
+        if (expected.EffectiveOptions.WarmStart is null)
+        {
+            Assert.Null(actual.EffectiveOptions.WarmStart);
+            return;
+        }
+
+        Assert.NotNull(actual.EffectiveOptions.WarmStart);
+        Assert.Equal(
+            expected.EffectiveOptions.WarmStart.SourceLogScaling,
+            actual.EffectiveOptions.WarmStart.SourceLogScaling);
+        Assert.Equal(
+            expected.EffectiveOptions.WarmStart.TargetLogScaling,
+            actual.EffectiveOptions.WarmStart.TargetLogScaling);
     }
 
     private sealed class CappedFactory(int cap) : WebApplicationFactory<Program>
