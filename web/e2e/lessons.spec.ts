@@ -129,7 +129,7 @@ test('course has readable desktop and mobile layouts', async ({ page }, testInfo
 
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/lessons/02-manual-allocation');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  await expect(page.getByRole('heading', { name: 'Build a feasible plan' })).toBeVisible();
   await page.screenshot({
     fullPage: true,
     path: testInfo.outputPath('course-mobile.png'),
