@@ -15,7 +15,12 @@ export function ResultSummary({ result, scenario }: { result: SolveResponse; sce
         {result.termination === 'NumericalBreakdown' ? 'Numerical breakdown' : result.termination}
       </p>
       <p>Usable plan: {result.checks.usable ? 'Yes' : 'No'}</p>
-      {!result.checks.usable && <p className="message warning">⚠ Infeasible or invalid plan: not a meaningful cost comparison. Shipment is unavailable.</p>}
+      {!result.checks.usable && <p className="message warning">
+        ⚠ Not approved for shipment. Approval requires the reference stopping condition,
+        finite/nonnegative entries, and both L1 residuals below the requested threshold of{' '}
+        {numberLabel(result.options.threshold)} kg. A low cost alone does not establish a usable plan.
+      </p>}
+      <p>Finite entries: {result.checks.finite ? 'Yes' : 'No'}; nonnegative entries: {result.checks.nonnegative ? 'Yes' : 'No'}.</p>
       <dl>
         <div><dt>Transport cost</dt><dd>{numberLabel(result.transportCost)}</dd></div>
         <div><dt>Accepted pairs</dt><dd>{result.acceptedPairs}</dd></div>
@@ -25,7 +30,7 @@ export function ResultSummary({ result, scenario }: { result: SolveResponse; sce
         <div><dt>Source / target L1 residuals</dt><dd>{numberLabel(result.checks.sourceL1)} / {numberLabel(result.checks.targetL1)} kg</dd></div>
       </dl>
       <details className="final-plan"><summary>Inspect final returned plan</summary>
-        <p>Fixed result from the library. Finite entries: {result.checks.finite ? 'Yes' : 'No'}; nonnegative entries: {result.checks.nonnegative ? 'Yes' : 'No'}. Last attempted index: {result.lastAttemptedIndex}.</p>
+        <p>Fixed result from the library. Last attempted index: {result.lastAttemptedIndex}.</p>
         <div className="table-scroll"><table aria-label="Final returned transport plan">
           <caption>Final returned quantities (kg) · independent of the selected trace phase</caption>
           <thead><tr><th scope="col">From / to</th>{scenario.targets.map((target) => <th scope="col" key={target.id}>{target.label}</th>)}</tr></thead>

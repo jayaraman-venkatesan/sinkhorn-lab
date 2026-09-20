@@ -43,7 +43,7 @@ test('keeps failed plans inspectable but disables shipment', async ({ page }) =>
   await expect(page.getByText('Numerical breakdown', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Play shipments' })).toBeDisabled();
   await expect(page.getByRole('table', { name: 'Transport plan', exact: true })).toBeVisible();
-  await expect(page.getByText(/not a meaningful cost comparison/i)).toBeVisible();
+  await expect(page.getByText(/Not approved for shipment/)).toBeVisible();
 });
 
 test('steps real phases, exposes rollback, and charts only reported checkpoints', async ({ page }) => {
@@ -117,4 +117,25 @@ test('solver replay restarts retained evidence and speed changes keep it playing
   await panel.getByLabel('Playback speed').selectOption('0.5');
   await expect(panel.getByRole('button', { name: 'Pause solver phases' })).toBeVisible();
   await panel.getByRole('button', { name: 'Pause solver phases' }).click();
+});
+
+test('finite nonnegative exhaustion is reported separately from shipment approval', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Maximum update pairs').fill('1');
+  const response = page.waitForResponse('**/api/solve');
+  await page.getByRole('button', { name: 'Run Basic' }).click();
+  const result = await (await response).json() as {
+    termination: string;
+    checks: { finite: boolean; nonnegative: boolean; usable: boolean; sourceL1: number; targetL1: number };
+  };
+  expect(result.termination).toBe('IterationLimit');
+  expect(result.checks).toMatchObject({ finite: true, nonnegative: true, usable: false });
+  const panel = page.getByRole('article', { name: 'Basic result' });
+  await expect(panel.getByText(/Not approved for shipment/)).toBeVisible();
+  await expect(panel.getByText(/Infeasible or invalid/)).toHaveCount(0);
+  await expect(panel.getByText('IterationLimit', { exact: true })).toBeVisible();
+  await expect(panel.getByText(/Finite entries: Yes; nonnegative entries: Yes/)).toBeVisible();
+  await expect(panel.getByText('Source / target L1 residuals')).toBeVisible();
+  await expect(panel.getByText(/both L1 residuals below the requested threshold of 1\.0000e-9 kg/)).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Play shipments', exact: true })).toBeDisabled();
 });
