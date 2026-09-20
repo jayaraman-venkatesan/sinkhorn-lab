@@ -1,0 +1,38 @@
+{
+  "id": "balanced",
+  "title": "Balanced two-by-two reference",
+  "source": [0.5, 0.5],
+  "target": [0.5, 0.5],
+  "costs": [[0, 1], [1, 0]],
+  "regularization": 1,
+  "threshold": 1e-9,
+  "maxIterations": 1000,
+  "reference": {
+    "version": "POT 0.9.6.post1",
+    "commit": "85113e9a380f5fcf684c50c73c1ff6a164a7366e",
+    "sourceGitBlob": "cf5efadfc0f33300899d9b8a20f762e5f96a2759",
+    "fixtureCase": "balanced"
+  },
+  "expected": {
+    "Basic": {
+      "termination": "ThresholdMet",
+      "lastAttemptedIndex": 0,
+      "attemptedPairs": 1,
+      "acceptedPairs": 1,
+      "plan": [[0.36552928931500245, 0.13447071068499758], [0.13447071068499758, 0.36552928931500245]],
+      "checks": { "finite": true, "nonnegative": true, "sourceL1": 0, "targetL1": 0, "totalMass": 1, "usable": true },
+      "transportCost": 0.26894142136999516,
+      "warnings": []
+    },
+    "LogDomain": {
+      "termination": "ThresholdMet",
+      "lastAttemptedIndex": 0,
+      "attemptedPairs": 1,
+      "acceptedPairs": 1,
+      "plan": [[0.3655292893150025, 0.13447071068499758], [0.13447071068499758, 0.3655292893150025]],
+      "checks": { "finite": true, "nonnegative": true, "sourceL1": 2.220446049250313e-16, "targetL1": 2.220446049250313e-16, "totalMass": 1.0000000000000002, "usable": true },
+      "transportCost": 0.26894142136999516,
+      "warnings": []
+    }
+  }
+}

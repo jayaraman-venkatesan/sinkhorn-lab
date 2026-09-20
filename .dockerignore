@@ -1,0 +1,14 @@
+.git
+.github
+.superpowers
+.worktrees
+**/bin
+**/obj
+**/node_modules
+**/dist
+web/playwright-report
+web/test-results
+*.log
+.env
+.env.*
+!.env.example

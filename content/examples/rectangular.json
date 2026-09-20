@@ -1,0 +1,38 @@
+{
+  "id": "rectangular",
+  "title": "Three sources and two destinations",
+  "source": [0.2, 0.3, 0.5],
+  "target": [0.4, 0.6],
+  "costs": [[0, 1], [1, 0], [0.5, 0.2]],
+  "regularization": 0.3,
+  "threshold": 1e-9,
+  "maxIterations": 1000,
+  "reference": {
+    "version": "POT 0.9.6.post1",
+    "commit": "85113e9a380f5fcf684c50c73c1ff6a164a7366e",
+    "sourceGitBlob": "cf5efadfc0f33300899d9b8a20f762e5f96a2759",
+    "fixtureCase": "rectangular"
+  },
+  "expected": {
+    "Basic": {
+      "termination": "ThresholdMet",
+      "lastAttemptedIndex": 30,
+      "attemptedPairs": 31,
+      "acceptedPairs": 31,
+      "plan": [[0.19572778843833752, 0.00427221156166249], [0.016527750278165335, 0.28347224972183466], [0.18774446128250682, 0.3122555387174932]],
+      "checks": { "finite": true, "nonnegative": true, "sourceL1": 0, "targetL1": 1.9806378759312793e-12, "totalMass": 1, "usable": true },
+      "transportCost": 0.17712330022457987,
+      "warnings": []
+    },
+    "LogDomain": {
+      "termination": "ThresholdMet",
+      "lastAttemptedIndex": 30,
+      "attemptedPairs": 31,
+      "acceptedPairs": 31,
+      "plan": [[0.19572778843833755, 0.00427221156166249], [0.016527750278165332, 0.2834722497218346], [0.18774446128250685, 0.31225553871749323]],
+      "checks": { "finite": true, "nonnegative": true, "sourceL1": 1.942890293094024e-16, "targetL1": 1.9806378759312793e-12, "totalMass": 1, "usable": true },
+      "transportCost": 0.1771233002245799,
+      "warnings": []
+    }
+  }
+}
